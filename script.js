@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
-  // 1. Mobile Menu & Drawer Controller with Backdrop Blur & Outside Click
+  // 1. Mobile Menu & Drawer Controller with 100% Solid Opaque Styling
   // =========================================================================
   const mobileMenuBtn = document.getElementById('mobile-menu-btn');
   const mobileMenu = document.getElementById('mobile-menu');
@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const menuIconOpen = document.getElementById('menu-icon-open');
   const menuIconClose = document.getElementById('menu-icon-close');
   const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+  const navbar = document.getElementById('navbar');
 
   function openMobileMenu() {
     if (!mobileMenu) return;
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuIconOpen) menuIconOpen.classList.add('hidden');
     if (menuIconClose) menuIconClose.classList.remove('hidden');
     if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
+    if (navbar) navbar.classList.add('menu-open');
     document.body.style.overflow = 'hidden'; // Lock background scroll on mobile menu open
   }
 
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuIconOpen) menuIconOpen.classList.remove('hidden');
     if (menuIconClose) menuIconClose.classList.add('hidden');
     if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+    if (navbar) navbar.classList.remove('menu-open');
     document.body.style.overflow = ''; // Unlock background scroll
   }
 
@@ -60,6 +63,20 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMobileMenu();
       }
     });
+
+    // Close on clicking outside menu
+    document.addEventListener('click', (e) => {
+      if (!mobileMenu.classList.contains('hidden') && !mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+        closeMobileMenu();
+      }
+    });
+
+    // Close on desktop resize
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024 && !mobileMenu.classList.contains('hidden')) {
+        closeMobileMenu();
+      }
+    }, { passive: true });
   }
 
   // =========================================================================
@@ -185,174 +202,50 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // 3. Adaptive Mobile & Desktop Background Video Canvas Engine
+  // 3. Hardware-Accelerated Video Stream & Smooth Fallback Controller
   // =========================================================================
-  const heroCanvas = document.getElementById('hero-frame-canvas');
+  const heroVideo = document.getElementById('hero-video');
   const heroFallback = document.getElementById('hero-fallback-img');
 
-  if (heroCanvas && heroCanvas.getContext) {
-    const ctx = heroCanvas.getContext('2d', { alpha: false });
-    const isMobileDevice = window.innerWidth < 768;
+  if (heroVideo) {
+    // Guarantee mute and inline properties for mobile autoplay policies
+    heroVideo.muted = true;
+    heroVideo.defaultMuted = true;
+    heroVideo.playsInline = true;
+
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
-    // On mobile devices, we stream with adaptive rate to conserve cellular bandwidth & battery
-    const TOTAL_FRAMES = 240;
-    const INITIAL_BUFFER = isMobileDevice ? 15 : 30;
-    const TARGET_FPS = isMobileDevice ? 24 : 30; // 24 FPS on mobile saves 25% battery & CPU
-    const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
-    const frames = [];
-    let currentFrameIndex = 0;
-    let isPlaying = !prefersReducedMotion;
-    let isVisible = true;
-    let lastFrameTime = 0;
-    let animationFrameId = null;
-    let loadedCount = 0;
-    let playbackStarted = false;
-
-    function getFrameUrl(idx) {
-      const padded = String(idx).padStart(3, '0');
-      return `./digital%20assest/homepagesolarjpg/ezgif-frame-${padded}.jpg`;
-    }
-
-    function resizeCanvas() {
-      const parent = heroCanvas.parentElement;
-      if (!parent) return;
-      const rect = parent.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const displayWidth = Math.round(rect.width);
-      const displayHeight = Math.round(rect.height);
-
-      if (displayWidth > 0 && displayHeight > 0) {
-        if (heroCanvas.width !== displayWidth * dpr || heroCanvas.height !== displayHeight * dpr) {
-          heroCanvas.width = displayWidth * dpr;
-          heroCanvas.height = displayHeight * dpr;
-        }
-        
-        if (frames[currentFrameIndex] && frames[currentFrameIndex].complete) {
-          drawFrame(frames[currentFrameIndex]);
-        }
+    if (!prefersReducedMotion) {
+      const playPromise = heroVideo.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // If browser policy blocks autoplay, poster fallback remains seamlessly visible
+        });
       }
     }
 
-    function drawFrame(img) {
-      if (!img || !img.complete || img.naturalWidth === 0) return;
-      const cw = heroCanvas.width;
-      const ch = heroCanvas.height;
-      const nw = img.naturalWidth;
-      const nh = img.naturalHeight;
-
-      const scale = Math.max(cw / nw, ch / nh);
-      const sw = nw * scale;
-      const sh = nh * scale;
-      const sx = (cw - sw) / 2;
-      const sy = (ch - sh) / 2;
-
-      ctx.drawImage(img, sx, sy, sw, sh);
-
-      if (!playbackStarted) {
-        playbackStarted = true;
-        heroCanvas.style.opacity = '1';
-        if (heroFallback) {
-          heroFallback.style.opacity = '0';
-        }
-      }
-    }
-
-    function preloadFrame(index) {
-      if (frames[index]) return frames[index];
-      const img = new Image();
-      img.src = getFrameUrl(index + 1);
-      img.onload = () => {
-        loadedCount++;
-        if (!playbackStarted && loadedCount >= INITIAL_BUFFER) {
-          startLoop();
-        }
-      };
-      frames[index] = img;
-      return img;
-    }
-
-    function loadFramesQueue() {
-      // Load initial buffer first
-      for (let i = 0; i < INITIAL_BUFFER; i++) {
-        preloadFrame(i);
-      }
-
-      // Progressively load the remaining frames in background idle time
-      let nextIndex = INITIAL_BUFFER;
-      function loadNextBatch() {
-        const batchSize = isMobileDevice ? 6 : 12;
-        const end = Math.min(nextIndex + batchSize, TOTAL_FRAMES);
-        for (let i = nextIndex; i < end; i++) {
-          preloadFrame(i);
-        }
-        nextIndex = end;
-        if (nextIndex < TOTAL_FRAMES) {
-          if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadNextBatch, { timeout: 800 });
-          } else {
-            setTimeout(loadNextBatch, isMobileDevice ? 100 : 50);
-          }
-        }
-      }
-      setTimeout(loadNextBatch, 400);
-    }
-
-    function loopTick(timestamp) {
-      if (!isPlaying || !isVisible) return;
-
-      if (!lastFrameTime) lastFrameTime = timestamp;
-      const elapsed = timestamp - lastFrameTime;
-
-      if (elapsed >= FRAME_INTERVAL) {
-        lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
-
-        const availableFrames = frames.filter(f => f && f.complete);
-        if (availableFrames.length > 0) {
-          currentFrameIndex = (currentFrameIndex + 1) % availableFrames.length;
-          drawFrame(availableFrames[currentFrameIndex]);
-        }
-      }
-
-      animationFrameId = requestAnimationFrame(loopTick);
-    }
-
-    function startLoop() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      isPlaying = true;
-      lastFrameTime = 0;
-      animationFrameId = requestAnimationFrame(loopTick);
-    }
-
-    // Battery & RAM Optimization: Pause when tab is inactive
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        isPlaying = false;
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      } else if (isVisible) {
-        startLoop();
-      }
-    });
-
-    // Battery & Performance: Pause loop when user scrolls past hero
-    if ('IntersectionObserver' in window && heroCanvas.parentElement) {
-      const heroObserver = new IntersectionObserver((entries) => {
+    // Performance & Mobile Battery: Pause video when scrolled past hero
+    if ('IntersectionObserver' in window && heroVideo.parentElement) {
+      const videoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          isVisible = entry.isIntersecting;
-          if (isVisible && !document.hidden) {
-            startLoop();
+          if (entry.isIntersecting && !document.hidden && !prefersReducedMotion) {
+            heroVideo.play().catch(() => {});
           } else {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            heroVideo.pause();
           }
         });
       }, { threshold: 0.05 });
-      heroObserver.observe(heroCanvas.parentElement);
+      videoObserver.observe(heroVideo.parentElement);
     }
 
-    window.addEventListener('resize', resizeCanvas, { passive: true });
-    resizeCanvas();
-    loadFramesQueue();
+    // Battery: Pause video when tab is hidden/minimized
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        heroVideo.pause();
+      } else if (!prefersReducedMotion && heroVideo.getBoundingClientRect().bottom > 0) {
+        heroVideo.play().catch(() => {});
+      }
+    });
   }
 
   // =========================================================================
@@ -426,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   // 6. Transparent-to-Glass Navbar Controller with Accurate Mobile Scrollspy
   // =========================================================================
-  const navbar = document.getElementById('navbar');
   const navLinks = document.querySelectorAll('.nav-link');
   const mobileLinks = document.querySelectorAll('.mobile-nav-link');
   

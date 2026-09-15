@@ -11,6 +11,8 @@ const urls = [
   '/digital%20assest/Luminous%20Battery%20pack_2K_202609091017.jpeg',
   '/digital%20assest/homepagesolarjpg/ezgif-frame-001.jpg',
   '/digital%20assest/homepagesolarjpg/ezgif-frame-240.jpg',
+  '/digital%20assest/homepagesolar.mp4',
+  '/digital%20assest/homepagesolar.webm',
   '/robots.txt',
   '/sitemap.xml'
 ];
