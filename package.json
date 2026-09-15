@@ -1,0 +1,21 @@
+{
+  "name": "mishika-solar-site",
+  "version": "1.0.0",
+  "description": "Mishika Solar Sphere - Rooftop Solar, Inverter & Battery Solutions Website (Sikar, Rajasthan)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node verify_assets.js"
+  },
+  "keywords": [
+    "solar",
+    "rooftop-solar",
+    "sikar",
+    "rajasthan",
+    "pm-surya-ghar",
+    "inverter",
+    "battery"
+  ],
+  "author": "Mishika Solar Sphere",
+  "license": "ISC"
+}

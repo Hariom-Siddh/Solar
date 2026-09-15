@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# OS & System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor & IDEs
+.vscode/
+.idea/
+
+# Temp & Audit scripts
+audit.js
